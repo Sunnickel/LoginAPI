@@ -1,8 +1,10 @@
 package at.sunnickel.loginapi.model;
 
-import at.sunnickel.loginapi.enums.Status;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * The type User.
@@ -12,8 +14,7 @@ import jakarta.persistence.*;
 public class User {
     @Id
     @JsonProperty(value = "id")
-    private long id = 0L;
-
+    private Long id = 0L;
 
     @JsonProperty(value = "name")
     @Column(name = "name", nullable = false, unique = true)
@@ -23,18 +24,10 @@ public class User {
     @Column(name = "hashed_password", nullable = false)
     private String password;
 
-    @JsonProperty(value = "status")
-    @Column(name = "status")
-    @Enumerated(EnumType.ORDINAL)
-    private Status status = Status.OFFLINE;
-
-    @JsonProperty(value = "token")
-    @Column(name = "token", nullable = false)
-    private String token;
 
     @JsonProperty(value = "ottoken")
     @Column(name = "ottoken")
-    private String ottoken;
+    private String ottoken = null;
 
     /**
      * Gets id.
@@ -43,24 +36,6 @@ public class User {
      */
     public Long getId() {
         return id;
-    }
-
-    /**
-     * Gets name.
-     *
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets name.
-     *
-     * @param name the name
-     */
-    public void setName(String name) {
-        this.name = name;
     }
 
     /**
@@ -73,47 +48,21 @@ public class User {
     }
 
     /**
-     * Sets password and hashes it.
+     * Sets password
+     *
+     * @param password the new password
      */
-    public void setPassword() {
+    public void setPassword(String password) {
         this.password = password;
     }
 
-
     /**
-     * Gets status.
+     * Tests if One Time Token exists
      *
-     * @return the status
+     * @return true if One Time Token is there
      */
-    public Status getStatus() {
-        return this.status;
-    }
-
-    /**
-     * Sets status.
-     *
-     * @param status the status
-     */
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    /**
-     * Gets the Login Token
-     *
-     * @return the token
-     */
-    public String getToken() {
-        return this.token;
-    }
-
-    /**
-     * Sets the token
-     *
-     * @param token the login token
-     */
-    public void setToken(String token) {
-        this.token = token;
+    public boolean testOTToken() {
+        return ottoken != null;
     }
 
     /**
@@ -128,7 +77,7 @@ public class User {
     /**
      * Sets the One Time Token
      *
-     * @Param ottoken the One Time Token
+     * @param ottoken the One Time Token
      */
     public void setOTToken(String ottoken) {
         this.ottoken = ottoken;

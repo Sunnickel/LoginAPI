@@ -1,6 +1,6 @@
 package at.sunnickel.loginapi.service;
 
-import at.sunnickel.loginapi.controller.UserController;
+import at.sunnickel.loginapi.model.User;
 import at.sunnickel.loginapi.repository.UserRepository;
 import jakarta.persistence.EntityExistsException;
 import org.hibernate.query.sqm.EntityTypeException;
@@ -11,8 +11,6 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,77 +31,57 @@ public class UserService {
     }
 
     /**
-     * Save user user.
+     * Registers a new User
      *
-     * @param user the user
-     * @return the user
+     * @param user the Clients user
+     *
+     * @return the registered User
      */
-    public ResponseEntity<at.sunnickel.loginapi.model.User> registerUser(@RequestBody at.sunnickel.loginapi.model.User user) throws NoSuchAlgorithmException {
+    public ResponseEntity<User> registerUser(@RequestBody User user) {
         if (userRepository.findById(user.getId()).isPresent()) {
             throw new EntityExistsException("User with id " + user.getId() + " already exists");
         } else if (user.getId() == 0) {
-            throw new EntityTypeException("User needs given id", user.getId().toString());
+            throw new EntityTypeException("User needs given id: " + user.getId(), user.getId().toString());
         }
-        String password = user.getPassword();
-        String name = user.getName();
-        user.setToken(Security.tokenize(name + password));
-        at.sunnickel.loginapi.model.User newUser = userRepository.save(user);
-        return ResponseEntity.ok(newUser);
+        user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()));
+        return ResponseEntity.ok(userRepository.save(user));
     }
 
-    public ResponseEntity<String> loginUser(@RequestBody Map<String, Object> login_parameter) throws NoSuchAlgorithmException {
-        String token = (String) login_parameter.get("token");
-
-        Long id = UserController.IntToLong(login_parameter.get("id"));
-
-        if (id != null && userRepository.findById(id).isPresent()) {
-            at.sunnickel.loginapi.model.User user = userRepository.findById(id).get();
-            if (user.getToken().equals(token)) {
-                String ottoken = Security.ottokenize(token);
-                user.setOTToken(ottoken);
-                userRepository.save(user);
-                return ResponseEntity.ok(ottoken);
+    /**
+     * Checks the User token and gets the One Time Token
+     *
+     * @param loginParameter a map with Client token and Client id
+     *
+     * @return One Time Token
+     */
+    public ResponseEntity<String> loginUser(@RequestBody Map<String, Object> loginParameter) {
+        String token = (String) loginParameter.get("token");
+        try {
+            Long id = Long.valueOf((Integer) loginParameter.get("id"));
+            if (userRepository.findById(id).isPresent()) {
+                User user = userRepository.findById(id).get();
+                if (user.getPassword().equals(token)) {
+                    String ottoken = BCrypt.hashpw(token + BCrypt.gensalt(12), BCrypt.gensalt(12));
+                    user.setOTToken(ottoken);
+                    userRepository.save(user);
+                    return ResponseEntity.ok(ottoken);
+                }
             }
-            return ResponseEntity.ok(ResponseEntity.status(HttpStatus.UNAUTHORIZED).toString());
+        } catch (Exception ignored) {
         }
         return ResponseEntity.ok(ResponseEntity.status(HttpStatus.UNAUTHORIZED).toString());
     }
 
-    /**
-     * Gets users.
-     *
-     * @return all users
-     */
-    public ResponseEntity<List<at.sunnickel.loginapi.model.User>> getAllUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
-    }
 
     /**
-     * Gets user by ID
+     * Gets a user by ID
      *
-     * @Returns User
+     * @return User
      */
-    public ResponseEntity<at.sunnickel.loginapi.model.User> getUserById(Long id) {
+    public ResponseEntity<User> getUserById(Long id) {
         if (userRepository.findById(id).isPresent()) {
             return ResponseEntity.ok(userRepository.findById(id).get());
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-    }
-
-    public class Security {
-        public static String tokenize(String plain_passwd) throws NoSuchAlgorithmException {
-            return BCrypt.hashpw(plain_passwd, BCrypt.gensalt(12));
-        }
-
-        public static String ottokenize(String plain_passwd) throws NoSuchAlgorithmException {
-            return BCrypt.hashpw(plain_passwd + BCrypt.gensalt(), BCrypt.gensalt());
-        }
-
-        public boolean check(Long id, String plain_passwd) {
-            if (userRepository.findById(id).isPresent()) {
-                return BCrypt.checkpw(plain_passwd, userRepository.findById(id).get().getPassword());
-            }
-            return false;
-        }
     }
 }
