@@ -158,4 +158,4 @@ Asks the API with a verify token what the one time token of the client is to com
 [stars-url]: https://github.com/sunnickel/LoginAPI/stargazers
 
 [license-shield]: https://img.shields.io/github/license/sunnickel/LoginAPI.svg?style=for-the-badge
-[license-url]: https://github.com/sunnickel/LoginAPI/blob/master/LICENSE.txt
+[license-url]: https://github.com/sunnickel/LoginAPI/blob/master/LICENSE
