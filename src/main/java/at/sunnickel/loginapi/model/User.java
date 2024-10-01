@@ -4,8 +4,6 @@ import at.sunnickel.loginapi.enums.Status;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
-import java.util.UUID;
-
 /**
  * The type User.
  */
@@ -14,8 +12,7 @@ import java.util.UUID;
 public class User {
     @Id
     @JsonProperty(value = "id")
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id = UUID.randomUUID();
+    private long id = 0L;
 
 
     @JsonProperty(value = "name")
@@ -26,21 +23,25 @@ public class User {
     @Column(name = "hashed_password", nullable = false)
     private String password;
 
-    @JsonProperty(value = "email")
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
-
     @JsonProperty(value = "status")
-    @Column(name = "status", nullable = false)
+    @Column(name = "status")
     @Enumerated(EnumType.ORDINAL)
-    private Status status;
+    private Status status = Status.OFFLINE;
+
+    @JsonProperty(value = "token")
+    @Column(name = "token", nullable = false)
+    private String token;
+
+    @JsonProperty(value = "ottoken")
+    @Column(name = "ottoken")
+    private String ottoken;
 
     /**
      * Gets id.
      *
      * @return the id
      */
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
@@ -78,23 +79,6 @@ public class User {
         this.password = password;
     }
 
-    /**
-     * Gets email.
-     *
-     * @return the email
-     */
-    public String getEmail() {
-        return email;
-    }
-
-    /**
-     * Sets email.
-     *
-     * @param email the email
-     */
-    public void setEmail(String email) {
-        this.email = email;
-    }
 
     /**
      * Gets status.
@@ -114,6 +98,40 @@ public class User {
         this.status = status;
     }
 
+    /**
+     * Gets the Login Token
+     *
+     * @return the token
+     */
+    public String getToken() {
+        return this.token;
+    }
 
+    /**
+     * Sets the token
+     *
+     * @param token the login token
+     */
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    /**
+     * Gets and deletes the One Time token
+     */
+    public String getOTToken() {
+        String ottoken = this.ottoken;
+        this.ottoken = null;
+        return ottoken;
+    }
+
+    /**
+     * Sets the One Time Token
+     *
+     * @Param ottoken the One Time Token
+     */
+    public void setOTToken(String ottoken) {
+        this.ottoken = ottoken;
+    }
 }
 

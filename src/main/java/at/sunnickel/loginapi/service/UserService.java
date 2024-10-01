@@ -1,16 +1,19 @@
 package at.sunnickel.loginapi.service;
 
-import at.sunnickel.loginapi.model.User;
+import at.sunnickel.loginapi.controller.UserController;
 import at.sunnickel.loginapi.repository.UserRepository;
 import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
+import org.hibernate.query.sqm.EntityTypeException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 /**
  * The type User service.
@@ -33,15 +36,37 @@ public class UserService {
      * Save user user.
      *
      * @param user the user
-     *
      * @return the user
      */
-    public ResponseEntity<User> saveUser(@RequestBody User user) {
-        if (user.getId() == null || userRepository.findById(user.getId()) == null) {
+    public ResponseEntity<at.sunnickel.loginapi.model.User> registerUser(@RequestBody at.sunnickel.loginapi.model.User user) throws NoSuchAlgorithmException {
+        if (userRepository.findById(user.getId()).isPresent()) {
             throw new EntityExistsException("User with id " + user.getId() + " already exists");
+        } else if (user.getId() == 0) {
+            throw new EntityTypeException("User needs given id", user.getId().toString());
         }
-        User newUser = userRepository.save(user);
+        String password = user.getPassword();
+        String name = user.getName();
+        user.setToken(Security.tokenize(name + password));
+        at.sunnickel.loginapi.model.User newUser = userRepository.save(user);
         return ResponseEntity.ok(newUser);
+    }
+
+    public ResponseEntity<String> loginUser(@RequestBody Map<String, Object> login_parameter) throws NoSuchAlgorithmException {
+        String token = (String) login_parameter.get("token");
+
+        Long id = UserController.IntToLong(login_parameter.get("id"));
+
+        if (id != null && userRepository.findById(id).isPresent()) {
+            at.sunnickel.loginapi.model.User user = userRepository.findById(id).get();
+            if (user.getToken().equals(token)) {
+                String ottoken = Security.ottokenize(token);
+                user.setOTToken(ottoken);
+                userRepository.save(user);
+                return ResponseEntity.ok(ottoken);
+            }
+            return ResponseEntity.ok(ResponseEntity.status(HttpStatus.UNAUTHORIZED).toString());
+        }
+        return ResponseEntity.ok(ResponseEntity.status(HttpStatus.UNAUTHORIZED).toString());
     }
 
     /**
@@ -49,53 +74,36 @@ public class UserService {
      *
      * @return all users
      */
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<at.sunnickel.loginapi.model.User>> getAllUsers() {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
     /**
-     * Gets user by id.
+     * Gets user by ID
      *
-     * @param id the id
-     *
-     * @return the user by id
+     * @Returns User
      */
-    public ResponseEntity<Optional<User>> getUserById(Long id) {
-        Optional<User> user = userRepository.findById(id);
-        if (user.isPresent()) {
-            return ResponseEntity.ok(user);
+    public ResponseEntity<at.sunnickel.loginapi.model.User> getUserById(Long id) {
+        if (userRepository.findById(id).isPresent()) {
+            return ResponseEntity.ok(userRepository.findById(id).get());
         }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    /**
-     * Delete user.
-     *
-     * @param id the userid
-     */
-    public ResponseEntity<String> deleteUser(Long id) {
-        userRepository.deleteById(id);
-        return ResponseEntity.ok("User Deleted Successfully");
-    }
-
-    /**
-     * Updates the User
-     *
-     * @param id          the id of the user
-     * @param updatedUser the user with new data
-     *
-     * @return User
-     * @throws IllegalArgumentException if id null
-     * @throws EntityNotFoundException  if user not in database
-     */
-    public ResponseEntity<User> updateUser(Long id, User updatedUser) {
-        if (id == null) {
-            throw new IllegalArgumentException("ID cannot be null");
+    public class Security {
+        public static String tokenize(String plain_passwd) throws NoSuchAlgorithmException {
+            return BCrypt.hashpw(plain_passwd, BCrypt.gensalt(12));
         }
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(String.valueOf(id)));
-        existingUser.setName(updatedUser.getName());
-        existingUser.setEmail(updatedUser.getEmail());
-        User savedUser = userRepository.save(existingUser);
-        return ResponseEntity.ok(savedUser);
+
+        public static String ottokenize(String plain_passwd) throws NoSuchAlgorithmException {
+            return BCrypt.hashpw(plain_passwd + BCrypt.gensalt(), BCrypt.gensalt());
+        }
+
+        public boolean check(Long id, String plain_passwd) {
+            if (userRepository.findById(id).isPresent()) {
+                return BCrypt.checkpw(plain_passwd, userRepository.findById(id).get().getPassword());
+            }
+            return false;
+        }
     }
 }
