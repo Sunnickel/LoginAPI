@@ -3,8 +3,8 @@
 > Sunnickel | 01.10.2024
 ---
 
-[![Stargazers][stars-shield]][stars-url]
-[![MIT License][license-shield]][license-url]
+![GitHub Repo stars](https://img.shields.io/github/stars/sunnickel/LoginAPI?style=for-the-badge)
+![GitHub License](https://img.shields.io/github/license/sunnickel/LoginAPI?style=for-the-badge)
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -151,11 +151,3 @@ Asks the API with a verify token what the one time token of the client is to com
 - [ ] make code faster
 - [ ] fix security (?)
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-[stars-shield]: https://img.shields.io/github/stars/sunnickel/LoginAPI.svg?style=for-the-badge
-[stars-url]: https://github.com/sunnickel/LoginAPI/stargazers
-
-[license-shield]: https://img.shields.io/github/license/sunnickel/LoginAPI.svg?style=for-the-badge
-[license-url]: https://github.com/sunnickel/LoginAPI/blob/master/LICENSE
